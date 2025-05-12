@@ -1,0 +1,60 @@
+#pragma once
+#include <string>
+#include <vector>
+#include <stdexcept>
+
+namespace coup {
+
+class Game;
+
+struct PlayerState {
+    bool isSanctioned = false; // The player can't preform tax & gather actions for his next turn
+    bool isTaxBlocked = false; // The player can't preform tax action for his next turn
+    bool isArrestedBlocked = false; // The player can't preform arrest action for his next turn
+    bool bribedThisTurn = false; // The player can preform 2 actions on his turn
+    bool onCoupTrial = false; // The player was tagged for a coup, only the general can undo this. On his next turn he will be terminated
+    bool active = true; // The player is in/out of the game
+};
+
+class Player {
+
+    
+protected:
+    Game& game;
+    std::string name;
+    int coin_count = 0;
+    PlayerState state;
+    void validateAction(const std::string& actionName = "") const;
+
+public:
+    Player(Game& game, const std::string& name);
+    virtual ~Player() = default;
+
+    void blockTax(Player& target);  // prevents only tax
+    void blockArrest(Player& target); // prevents arrest
+    void blockCoup(Player& target); // Prevents coup
+    void blockBribe(Player& target); // Prevents bribe
+    bool onTaxBlocked() const;
+    bool onArrestedBlocked() const;
+    bool onCoupTrial() const;
+    bool onBribe() const;
+    std::string getName() const;
+    int coins() const;
+    bool isActive() const;
+    virtual std::string role() const = 0;
+    virtual void gather();
+    virtual void tax();
+    virtual void bribe();
+    virtual void arrest(Player& target);
+    virtual void sanction(Player& target);
+    virtual bool onSanctioned() const;
+    virtual bool onArrested() const;
+    virtual void coup(Player& target);
+    virtual void undo(Player& other); // Only some roles override this////////////////////
+
+    void addCoins(int amount);
+    void deductCoins(int amount);
+    void deactivate();
+};
+
+} // namespace coup
