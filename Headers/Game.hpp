@@ -20,13 +20,18 @@ private:
 
 public:
     Game();
-
+    ~Game();
     std::vector<Player*> getPlayers() const;
-    void addPlayer(Player* player);
-    Player* turn() const;
+    //void addPlayer(Player* player);
+    // Player* turn() const;
+    Player* turn();
+    void handleTurnWithTarget(Player* player, const std::string& action, Player* target, std::vector<std::string>& log);
+    void handleTurnWithNoTarget(Player* player, const std::string& action, std::vector<std::string>& log);
+    bool handleBlockConsequences(const std::string& action, Player* blocker, Player* initiator, std::vector<std::string>& log);
     std::vector<std::string> players() const;
-    std::string winner() const;
+    Player* winner() const;
     void addPlayerWithRandomRole(const std::string& name);
+    void checkElimination(std::vector<std::string>& log);
     //void paidBribe();
 
     void nextTurn(); // Called manually after a player's action

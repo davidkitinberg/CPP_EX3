@@ -6,21 +6,25 @@ namespace coup {
 
 // Empty constructor
 Game::Game() {}
+Player* last_turn_player = nullptr;
 
-// Function that adds player to the game
-void Game::addPlayer(Player* player) {
-    if (player_list.size() >= 6) {
-        throw std::runtime_error("Maximum 6 players allowed");
+// Destructor
+Game::~Game() {
+    for (Player* p : player_list) {
+        delete p;
     }
-    player_list.push_back(player);
-
+    player_list.clear();
 }
 
 // Function to add player with random Role
 void Game::addPlayerWithRandomRole(const std::string& name) {
+    if (player_list.size() >= 6) {
+        throw std::runtime_error("Maximum 6 players allowed");
+    }
     static std::vector<std::string> roles = {"Baron", "Spy", "Governor", "Merchant", "Judge", "General"};
     std::string role = roles[rand() % roles.size()];
-    Player* player = createPlayerByRole(role, *this, name); // Your factory function
+    Player* player = createPlayerByRole(role, *this, name); // Factory function
+    player_list.push_back(player); // Add player to the game
 }
 
 // Function that gives the Players of the game
@@ -35,9 +39,21 @@ std::vector<Player*> Game::getPlayers() const {
 }
 
 // Function that returns the current player that has the turn now
-Player* Game::turn() const {
-    if (player_list.empty()) throw std::runtime_error("No players in the game");
-    return player_list[current_turn];
+Player* Game::turn() {
+    if (player_list.empty()) {
+        throw std::runtime_error("No players in the game");
+    }
+
+    Player* p = player_list[current_turn];
+
+    // Handle coup trial resolution: eliminate if not blocked
+    if (p->onCoupTrial()) {
+        p->eliminate();  // new function below
+        nextTurn();      // skip to next valid player
+        return turn();   // recursively return the next valid player
+    }
+
+    return p;
 }
 
 // Fucntion that return vector list of the current players names
@@ -52,28 +68,262 @@ std::vector<std::string> Game::players() const {
 }
 
 // Function that declares winner
-std::string Game::winner() const {
-    std::string last_name;
+Player* Game::winner() const {
     int count = 0;
-    for (Player* p : player_list) 
-    {
-        if (p->isActive()) 
-        {
-            last_name = p->getName();
+    Player* last_active = nullptr;
+
+    for (Player* p : player_list) {
+        if (p->isActive()) {
+            last_active = p;
             count++;
         }
     }
-    if (count == 1) return last_name;
-    throw std::runtime_error("Game is still ongoing");
+
+    if (count == 1) {
+        return last_active;
+    }
+
+    return nullptr; // No winner yet or more than one player still active
 }
 
-// Function that chnages turns to the next player
+// Function to handle turn game with action that requires a target
+void Game::handleTurnWithTarget(Player* player, const std::string& action, Player* target, std::vector<std::string>& log) {
+    if (!player || !target) {
+        log.push_back("Invalid turn: Player or target is null.");
+        return;
+    }
+
+    if (!player->isActive()) {
+        log.push_back(player->getName() + " is out of the game.");
+        return;
+    }
+
+    if (!target->isActive()) {
+        log.push_back("Invalid target: " + target->getName() + " is already eliminated.");
+        return;
+    }
+
+    if(player->coins() >= 10)
+    {
+        try {
+            player->coup(*target);  // Might throw
+            log.push_back(player->getName() + " couped " + target->getName());
+                nextTurn();
+        } 
+        catch (const std::exception& e) {
+            log.push_back("Action failed: " + std::string(e.what()));
+        }
+    }
+    else // Handle action logic
+    {
+        
+        if (action == "Arrest") {
+            try {
+                player->arrest(*target);  // Might throw
+                log.push_back(player->getName() + " arrested " + target->getName());
+                nextTurn();
+            } 
+            catch (const std::exception& e) {
+                log.push_back("Action failed: " + std::string(e.what()));
+            }
+        }
+        else if (action == "Sanction") {
+            try {
+                player->sanction(*target);  // Might throw
+                log.push_back(player->getName() + " sanctioned " + target->getName());
+                nextTurn();
+            } 
+            catch (const std::exception& e) {
+                log.push_back("Action failed: " + std::string(e.what()));
+            }
+        }
+        else if (action == "Coup") {
+            try {
+                player->coup(*target);  // Might throw
+                log.push_back(player->getName() + " placed " + target->getName() + 
+                    " on a coup trial. On " + target->getName() + "'s next turn, he/she will be eliminated");
+                nextTurn();
+            } 
+            catch (const std::exception& e) {
+                log.push_back("Action failed: " + std::string(e.what()));
+            }
+        }
+        ////////////////////////////////Special actions /////////////////////////////
+        else if (action == "BlockTax") {
+            try {
+                player->blockTax(*target);  // Might throw
+                log.push_back(player->getName() + " tax blocked " + target->getName());
+                nextTurn();
+            } 
+            catch (const std::exception& e) {
+                log.push_back("Action failed: " + std::string(e.what()));
+            }
+        }
+        else if (action == "BlockCoup") {
+            try {
+                General* general = dynamic_cast<General*>(player);
+                general->preventCoup(*target);
+                //player->blockCoup(*target);  // Might throw
+                log.push_back(player->getName() + " blocked coup " + target->getName() + " is now saved from elimination");
+                nextTurn();
+            } 
+            catch (const std::exception& e) {
+                log.push_back("Action failed: " + std::string(e.what()));
+            }
+        }
+        else if (action == "BlockBribe") {
+            try {
+                player->blockBribe(*target);  // Might throw
+                log.push_back(player->getName() + " bribe blocked " + target->getName());
+                nextTurn();
+            } 
+            catch (const std::exception& e) {
+                log.push_back("Action failed: " + std::string(e.what()));
+            }
+        }
+        else if (action == "BlockArrest") {
+            try {
+                player->blockArrest(*target);  // Might throw
+                log.push_back(player->getName() + " arrest blocked " + target->getName());
+                nextTurn();
+            } 
+            catch (const std::exception& e) {
+                log.push_back("Action failed: " + std::string(e.what()));
+            }
+        }
+        else {
+            log.push_back("Unknown action: " + action);
+            return;
+        }
+    }
+
+}
+
+
+
+
+// Function to handle turn game with action does not require a target
+void Game::handleTurnWithNoTarget(Player* player, const std::string& action, std::vector<std::string>& log) {
+    
+    if (action == "Tax") {
+            try {
+                player->tax(); // Might throw
+                log.push_back(player->getName() + " used tax ");
+                nextTurn();
+            } 
+            catch (const std::exception& e) {
+                log.push_back("Action failed: " + std::string(e.what()));
+            }
+    }
+    else if (action == "Bribe") {
+        if (!player->onBribe())
+        {
+            try {
+                player->bribe();  // Might throw
+                log.push_back(player->getName() + " used bribe ");
+                //nextTurn();
+            } 
+            catch (const std::exception& e) {
+                log.push_back("Action failed: " + std::string(e.what()));
+            }
+        }
+        else log.push_back(player->getName() + " already used bribe once this turn");
+    }
+    else if (action == "Gather") {
+        try {
+            player->gather();  // Might throw
+            log.push_back(player->getName() + " used gather ");
+            nextTurn();
+        } 
+        catch (const std::exception& e) {
+            log.push_back("Action failed: " + std::string(e.what()));
+        }
+    }
+    ////////////////////////////////Special actions /////////////////////////////
+    else if (action == "Invest") {
+        try {
+            Baron* baron = dynamic_cast<Baron*>(player);
+            baron->invest();  // Might throw
+            log.push_back(player->getName() + " used invest ");
+            nextTurn();
+        } 
+        catch (const std::exception& e) {
+            log.push_back("Action failed: " + std::string(e.what()));
+        }
+    }
+    else {
+        log.push_back("Unknown action: " + action);
+        return;
+    }
+}
+
+// Special function that handles block consequences logic when its not the blocker's turn
+bool Game::handleBlockConsequences(const std::string& action, Player* blocker, Player* initiator, std::vector<std::string>& log) {
+    
+    // The initiator should still lose his coins after Judge's bribe block
+    if (action == "Bribe" && blocker->role() == "Judge") {
+        // Bribe gets blocked — player loses 4 coins
+        if (initiator->coins() >= 4) {
+            initiator->deductCoins(4);
+            log.push_back(initiator->getName() + " loses 4 coins due to blocked Bribe.");
+            return true;
+        } else {
+            log.push_back(initiator->getName() + " tried Bribe but didn't have 4 coins to lose.");
+            return false;
+        }
+    }
+
+    // A General should pay 5 coins in order to block
+    if (action == "Coup" && blocker->role() == "General") {
+        if (blocker->coins() >= 5 && initiator->coins() >= 7) {
+            blocker->deductCoins(5);
+            initiator->deductCoins(7);
+            log.push_back(blocker->getName() + " blocked Coup action and lost 5 coins.");
+            log.push_back(initiator->getName() + "'s coup attempt got blocked and lost 7 coins.");
+            return true;
+        } else {
+            log.push_back(blocker->getName() + " tried to block Coup but lacked 5 coins.");
+            return false;  // Do not allow block
+        }
+    }
+
+    return true; // No special cost or restriction — allow block
+}
+
+
 void Game::nextTurn() {
     if (player_list.empty()) return;
 
-    do {
-        current_turn = (current_turn + 1) % player_list.size();
-    } while (!player_list[current_turn]->isActive());
+    // Save current player before rotating
+    last_turn_player = turn();
+
+    
+
+    // Advance only if bribe wasn't used
+    if (!last_turn_player->onBribe()) {
+        do {
+            current_turn = (current_turn + 1) % player_list.size();
+        } while (!player_list[current_turn]->isActive());
+    }
+
+    // Reset bribe state of the **previous** player
+    if (last_turn_player->onBribe()) {
+        last_turn_player->usedBribeTurn();
+    }
+
+    // Reset Arrest, bribe & sanction block flag for player's next turn
+    last_turn_player->resetTurnFlags();
+}
+
+void Game::checkElimination(std::vector<std::string>& log) {
+    Player* p = player_list[current_turn];
+
+    // Handle coup trial resolution: eliminate if not blocked
+    if (p->onCoupTrial()) {
+        p->eliminate();  // new function below
+        log.push_back(p->getName() + " was eliminated due to an unresolved coup.");
+        nextTurn();
+    }
 }
 
 }

@@ -1,18 +1,33 @@
 CXX = g++
 CXXFLAGS = -Wall -std=c++17 -IHeaders
 LDFLAGS = -lsfml-graphics -lsfml-window -lsfml-system
-SRC = $(wildcard Source/*.cpp) Source/GUI/coupGUI.cpp
-OUT = coupGUI
 
-all: $(OUT)
+# All logic files (no GUI)
+LOGIC_SRC = Source/Game.cpp Source/Player.cpp Source/PlayerFactory.cpp \
+            Source/Baron.cpp Source/Spy.cpp Source/Judge.cpp Source/Governor.cpp \
+            Source/Merchant.cpp Source/General.cpp
 
-$(OUT): $(SRC)
-	$(CXX) $(SRC) $(CXXFLAGS) $(LDFLAGS) -o $(OUT)
+# GUI includes coupGUI.cpp which has main()
+GUI_SRC = $(LOGIC_SRC) Source/GUI/coupGUI.cpp
 
-run: $(OUT)
-	@export DISPLAY=$(shell grep nameserver /etc/resolv.conf | awk '{print $$2}'):0 && \
+# Targets
+run: coupGUI
+	@export DISPLAY=$$(grep nameserver /etc/resolv.conf | awk '{print $$2}'):0 && \
 	export LIBGL_ALWAYS_INDIRECT=1 && \
-	./$(OUT)
+	./coupGUI
+
+coupGUI:
+	$(CXX) $(GUI_SRC) $(CXXFLAGS) $(LDFLAGS) -o coupGUI
+
+main: main.cpp $(LOGIC_SRC)
+	$(CXX) main.cpp $(LOGIC_SRC) $(CXXFLAGS) $(LDFLAGS) -g -o demo
+
+test: test.cpp $(LOGIC_SRC)
+	$(CXX) test.cpp $(LOGIC_SRC) $(CXXFLAGS) $(LDFLAGS) -o test
+
+valgrind:
+	g++ main.cpp Source/*.cpp -Wall -std=c++17 -IHeaders -lsfml-graphics -lsfml-window -lsfml-system -o demo
+	valgrind --leak-check=full ./demo
 
 clean:
-	rm -f $(OUT)
+	rm -f coupGUI demo test

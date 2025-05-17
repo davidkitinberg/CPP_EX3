@@ -8,8 +8,7 @@
 namespace coup {
 
 Player::Player(Game& g, const std::string& name) : game(g), name(name) {
-    // Register the player in the game
-    g.addPlayer(this);
+    
 }
 
 // Returns name of player
@@ -45,6 +44,11 @@ void Player::deactivate() {
     state.onCoupTrial = true;
 }
 
+void Player::eliminate() {
+    state.active = false;
+    state.onCoupTrial = false;
+}
+
 // Gives one coin to the player
 void Player::gather() {
     validateAction("Gather");
@@ -70,11 +74,16 @@ void Player::tax() {
 
 void Player::bribe() {
     validateAction("Bribe");
+
+    // Check if the player is bribe blocked
+    if (state.isBribeBlocked) {
+        throw std::runtime_error(name + " is bribe-blocked and cannot use bribe this turn.");
+    }
+
     if (coin_count < 4)
-        throw std::runtime_error(name + " cannot perform bribe");
+        throw std::runtime_error(name + " cannot perform bribe (not enough coins - require 4 coins)");
     else {
         deductCoins(4);
-        //game.paidBribe();
 
         state.bribedThisTurn = true;
     }
@@ -82,28 +91,35 @@ void Player::bribe() {
 
 void Player::arrest(Player& target) {
     validateAction("Arrest");
+
     if (&target == this)
         throw std::runtime_error("Cannot perform arrest on yourself");
-    
-    if(onArrestedBlocked()) 
-        throw std::runtime_error(name + " is currently arrested blocked and therefore cannot perform arrest.");
-    
-    
-    if (target.state.isArrestedBlocked == false) // If target was not already arrested in the last turn, make an arrest
-    {
+
+    if (target.state.isRecentlyArrested)
+        throw std::runtime_error(target.getName() + " was recently arrested and cannot be arrested again yet.");
+
+
+    // Do the arrest logic
+    target.deductCoins(1);
+    addCoins(1);
+
+    if (target.role() == "General") {
+        target.addCoins(1);
+    }
+    if (target.role() == "Merchant") {
         target.deductCoins(1);
-        addCoins(1);
-        if (target.role() == "General")
-        {
-            target.addCoins(1); // General is immune to arrest
-        }
-        if (target.role() == "Merchant")
-        {
-            target.deductCoins(1);
-            deductCoins(1);
+        deductCoins(1);
+    }
+
+    // Clear "recently arrested" state from all other players
+    for (Player* p : game.getPlayers()) {
+        if (p != &target) {
+            p->state.isRecentlyArrested = false;
         }
     }
-    target.state.isArrestedBlocked = true; // Mark as arrested already
+
+    // Then mark the target as newly arrested
+    target.state.isRecentlyArrested = true;
 }
 
 void Player::sanction(Player& target) {
@@ -114,12 +130,10 @@ void Player::sanction(Player& target) {
         throw std::runtime_error("Not enough coins for sanctions (require 3 coins)");
     if ((target.role() == "Judge") && coin_count < 4)
         throw std::runtime_error("Not enough coins for sanctions on Judge (require 4 coins)");
-    if(target.state.isSanctioned == true)
-        throw std::runtime_error(target.getName() + "is already sanctioned. Please choose another player");
     else
     {
         deductCoins(3);
-        target.state.isSanctioned == true;
+        target.state.isSanctioned = true;
         if(target.role() == "Baron") target.addCoins(1); // Special Baron compensation
         if(target.role() == "Judge") deductCoins(1);; // Special Baron compensation
     }
@@ -131,9 +145,9 @@ bool Player::onSanctioned() const {
 }
 
 // Helper function to see arrested state
-bool Player::onArrested() const {
-    return state.isArrestedBlocked;
-}
+// bool Player::onArrested() const {
+//     return state.isArrestedBlocked;
+// }
 
 
 void Player::coup(Player& target) {
@@ -142,10 +156,6 @@ void Player::coup(Player& target) {
     if (coin_count < 7) throw std::runtime_error("Not enough coins to coup (require 7 coins)");
     deductCoins(7);
     target.deactivate();
-}
-
-void Player::undo(Player& other) {
-    throw std::runtime_error(name + " cannot undo actions");
 }
 
 
@@ -159,8 +169,12 @@ void Player::validateAction(const std::string& actionName) const {
         throw std::runtime_error("Not your turn");
     }
 
-    if (onSanctioned()) {
+    if (onSanctioned() && (actionName == "Tax" || actionName == "Gather")) {
         throw std::runtime_error(name + " is currently sanctioned and therefore cannot perform " + actionName + ".");
+    }
+
+    if (state.isArrestedBlocked && actionName == "Arrest") {
+        throw std::runtime_error(name + " is currently blocked from using arrest (Spy ability).");
     }
 }
 
@@ -184,7 +198,14 @@ void Player::blockCoup(Player& target) {
 
 void Player::blockBribe(Player& target) {
     if(this->role() != "Judge") throw std::runtime_error("Coup block action only permitted to Judge");
-    target.state.bribedThisTurn = false;
+    
+    if (game.turn() == this) {
+        // Judge is using block during their own turn: apply future bribe block
+        target.state.isBribeBlocked = true;
+    } else {
+        // Passive block via reaction: cancel bribe attempt this turn
+        target.state.bribedThisTurn = false;
+    }
 
 }
 
@@ -206,6 +227,33 @@ bool Player::onTaxBlocked() const {
 // Helper function to judge that checks if player has taken a bribe (for 2 actions on a turn)
 bool Player::onBribe() const {
     return state.bribedThisTurn; 
+}
+
+void Player::usedBribeTurn() {
+    if(!onBribe())
+        throw std::runtime_error(this->getName() + " Did not use bribe this turn");
+    
+    state.bribedThisTurn = false;
+}
+
+// void Player::resetArrestBlock() {
+//     state.isArrestedBlocked = false;
+// }
+
+// void Player::resetBribeBlock() {
+//     state.isBribeBlocked = false;
+// }
+
+// void Player::resetSanction() {
+//     state.isSanctioned = false;
+// }
+
+void Player::resetTurnFlags() {
+    state.bribedThisTurn = false;
+    state.isSanctioned = false;
+    state.isTaxBlocked = false;
+    state.isArrestedBlocked = false;
+    state.isBribeBlocked = false;
 }
 
 

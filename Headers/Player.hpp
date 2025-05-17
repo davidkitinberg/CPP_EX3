@@ -11,6 +11,8 @@ struct PlayerState {
     bool isSanctioned = false; // The player can't preform tax & gather actions for his next turn
     bool isTaxBlocked = false; // The player can't preform tax action for his next turn
     bool isArrestedBlocked = false; // The player can't preform arrest action for his next turn
+    bool isRecentlyArrested = false; // for arrest cooldown logic
+    bool isBribeBlocked = false; // The player can't preform bribe action for his next turn
     bool bribedThisTurn = false; // The player can preform 2 actions on his turn
     bool onCoupTrial = false; // The player was tagged for a coup, only the general can undo this. On his next turn he will be terminated
     bool active = true; // The player is in/out of the game
@@ -36,8 +38,12 @@ public:
     void blockBribe(Player& target); // Prevents bribe
     bool onTaxBlocked() const;
     bool onArrestedBlocked() const;
+    //void resetArrestBlock();
     bool onCoupTrial() const;
+    void eliminate();
     bool onBribe() const;
+    //void resetBribeBlock();
+    void usedBribeTurn();
     std::string getName() const;
     int coins() const;
     bool isActive() const;
@@ -47,10 +53,13 @@ public:
     virtual void bribe();
     virtual void arrest(Player& target);
     virtual void sanction(Player& target);
+    //void resetSanction();
     virtual bool onSanctioned() const;
-    virtual bool onArrested() const;
+    //virtual bool onArrested() const;
     virtual void coup(Player& target);
-    virtual void undo(Player& other); // Only some roles override this////////////////////
+
+    void resetTurnFlags();
+    
 
     void addCoins(int amount);
     void deductCoins(int amount);
