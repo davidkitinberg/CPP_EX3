@@ -1,3 +1,5 @@
+// davidkitinberg@gmail.com
+
 #include "../Headers/Spy.hpp"
 #include "../Headers/Player.hpp"
 

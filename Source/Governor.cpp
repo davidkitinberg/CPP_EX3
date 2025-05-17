@@ -1,3 +1,5 @@
+// davidkitinberg@gmail.com
+
 #include "../Headers/Governor.hpp"
 #include "../Headers/Player.hpp"
 #include <stdexcept>

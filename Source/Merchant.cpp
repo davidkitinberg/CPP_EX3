@@ -1,3 +1,5 @@
+// davidkitinberg@gmail.com
+
 #include "../Headers/Merchant.hpp"
 #include "../Headers/Player.hpp"
 

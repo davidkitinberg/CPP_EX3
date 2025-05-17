@@ -1,11 +1,11 @@
+// davidkitinberg@gmail.com
+
 #pragma once
 #include <vector>
 #include <string>
 #include <stdexcept>
 #include "../Headers/Player.hpp"
-//#include <QObject>
-//#include <QStringList>
-
+#include <random>
 
 namespace coup {
 
@@ -28,6 +28,7 @@ public:
     void handleTurnWithTarget(Player* player, const std::string& action, Player* target, std::vector<std::string>& log);
     void handleTurnWithNoTarget(Player* player, const std::string& action, std::vector<std::string>& log);
     bool handleBlockConsequences(const std::string& action, Player* blocker, Player* initiator, std::vector<std::string>& log);
+    void handleMerchantPassive(Player* player, std::vector<std::string>& log);
     std::vector<std::string> players() const;
     Player* winner() const;
     void addPlayerWithRandomRole(const std::string& name);

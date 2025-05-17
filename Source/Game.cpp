@@ -1,11 +1,15 @@
+// davidkitinberg@gmail.com
+
+
 #include "../Headers/Game.hpp"
-#include "../Headers/Exception.hpp"
 #include "../Headers/PlayerFactory.hpp"
 
 namespace coup {
 
 // Empty constructor
 Game::Game() {}
+
+// Global pointer to the player who made the last turn
 Player* last_turn_player = nullptr;
 
 // Destructor
@@ -22,7 +26,16 @@ void Game::addPlayerWithRandomRole(const std::string& name) {
         throw std::runtime_error("Maximum 6 players allowed");
     }
     static std::vector<std::string> roles = {"Baron", "Spy", "Governor", "Merchant", "Judge", "General"};
-    std::string role = roles[rand() % roles.size()];
+
+    // Use the Mersenne Twister engine for better randomization
+    static std::random_device rd;
+    static std::mt19937 gen(rd()); // seed once the random object
+    std::uniform_int_distribution<> dis(0, roles.size() - 1);
+
+    std::string role = roles[dis(gen)];
+
+
+    //std::string role = roles[rand() % roles.size()];
     Player* player = createPlayerByRole(role, *this, name); // Factory function
     player_list.push_back(player); // Add player to the game
 }
@@ -106,9 +119,10 @@ void Game::handleTurnWithTarget(Player* player, const std::string& action, Playe
     if(player->coins() >= 10)
     {
         try {
-            player->coup(*target);  // Might throw
-            log.push_back(player->getName() + " couped " + target->getName());
-                nextTurn();
+            player->coup(*target);
+            log.push_back(player->getName() + " placed " + target->getName() + 
+                    " on a coup trial. On " + target->getName() + "'s next turn, he/she will be eliminated");
+            nextTurn();
         } 
         catch (const std::exception& e) {
             log.push_back("Action failed: " + std::string(e.what()));
@@ -119,7 +133,7 @@ void Game::handleTurnWithTarget(Player* player, const std::string& action, Playe
         
         if (action == "Arrest") {
             try {
-                player->arrest(*target);  // Might throw
+                player->arrest(*target);
                 log.push_back(player->getName() + " arrested " + target->getName());
                 nextTurn();
             } 
@@ -129,7 +143,7 @@ void Game::handleTurnWithTarget(Player* player, const std::string& action, Playe
         }
         else if (action == "Sanction") {
             try {
-                player->sanction(*target);  // Might throw
+                player->sanction(*target);
                 log.push_back(player->getName() + " sanctioned " + target->getName());
                 nextTurn();
             } 
@@ -139,7 +153,7 @@ void Game::handleTurnWithTarget(Player* player, const std::string& action, Playe
         }
         else if (action == "Coup") {
             try {
-                player->coup(*target);  // Might throw
+                player->coup(*target);
                 log.push_back(player->getName() + " placed " + target->getName() + 
                     " on a coup trial. On " + target->getName() + "'s next turn, he/she will be eliminated");
                 nextTurn();
@@ -151,7 +165,7 @@ void Game::handleTurnWithTarget(Player* player, const std::string& action, Playe
         ////////////////////////////////Special actions /////////////////////////////
         else if (action == "BlockTax") {
             try {
-                player->blockTax(*target);  // Might throw
+                player->blockTax(*target);
                 log.push_back(player->getName() + " tax blocked " + target->getName());
                 nextTurn();
             } 
@@ -163,7 +177,6 @@ void Game::handleTurnWithTarget(Player* player, const std::string& action, Playe
             try {
                 General* general = dynamic_cast<General*>(player);
                 general->preventCoup(*target);
-                //player->blockCoup(*target);  // Might throw
                 log.push_back(player->getName() + " blocked coup " + target->getName() + " is now saved from elimination");
                 nextTurn();
             } 
@@ -173,7 +186,7 @@ void Game::handleTurnWithTarget(Player* player, const std::string& action, Playe
         }
         else if (action == "BlockBribe") {
             try {
-                player->blockBribe(*target);  // Might throw
+                player->blockBribe(*target);
                 log.push_back(player->getName() + " bribe blocked " + target->getName());
                 nextTurn();
             } 
@@ -183,7 +196,7 @@ void Game::handleTurnWithTarget(Player* player, const std::string& action, Playe
         }
         else if (action == "BlockArrest") {
             try {
-                player->blockArrest(*target);  // Might throw
+                player->blockArrest(*target);
                 log.push_back(player->getName() + " arrest blocked " + target->getName());
                 nextTurn();
             } 
@@ -207,7 +220,7 @@ void Game::handleTurnWithNoTarget(Player* player, const std::string& action, std
     
     if (action == "Tax") {
             try {
-                player->tax(); // Might throw
+                player->tax();
                 log.push_back(player->getName() + " used tax ");
                 nextTurn();
             } 
@@ -219,9 +232,9 @@ void Game::handleTurnWithNoTarget(Player* player, const std::string& action, std
         if (!player->onBribe())
         {
             try {
-                player->bribe();  // Might throw
+                player->bribe();
                 log.push_back(player->getName() + " used bribe ");
-                //nextTurn();
+                
             } 
             catch (const std::exception& e) {
                 log.push_back("Action failed: " + std::string(e.what()));
@@ -231,7 +244,7 @@ void Game::handleTurnWithNoTarget(Player* player, const std::string& action, std
     }
     else if (action == "Gather") {
         try {
-            player->gather();  // Might throw
+            player->gather();
             log.push_back(player->getName() + " used gather ");
             nextTurn();
         } 
@@ -243,7 +256,7 @@ void Game::handleTurnWithNoTarget(Player* player, const std::string& action, std
     else if (action == "Invest") {
         try {
             Baron* baron = dynamic_cast<Baron*>(player);
-            baron->invest();  // Might throw
+            baron->invest();
             log.push_back(player->getName() + " used invest ");
             nextTurn();
         } 
@@ -283,14 +296,22 @@ bool Game::handleBlockConsequences(const std::string& action, Player* blocker, P
             return true;
         } else {
             log.push_back(blocker->getName() + " tried to block Coup but lacked 5 coins.");
-            return false;  // Do not allow block
+            return false;
         }
     }
 
     return true; // No special cost or restriction — allow block
 }
 
+// Small simple function to handle Merchant passive ability
+void Game::handleMerchantPassive(Player* player, std::vector<std::string>& log) {
+    if (player->role() == "Merchant" && player->coins() >= 3) {
+        player->addCoins(1);
+        log.push_back(player->getName() + " (Merchant) gained 1 passive coin for having 3+ coins.");
+    }
+}
 
+// Function that handles turn cycle, bribe handling and flag reset
 void Game::nextTurn() {
     if (player_list.empty()) return;
 
@@ -315,6 +336,7 @@ void Game::nextTurn() {
     last_turn_player->resetTurnFlags();
 }
 
+// Function that checks elimination before each player's turn and eliminates if there is a need to
 void Game::checkElimination(std::vector<std::string>& log) {
     Player* p = player_list[current_turn];
 

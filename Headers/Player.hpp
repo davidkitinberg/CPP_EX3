@@ -1,3 +1,5 @@
+// davidkitinberg@gmail.com
+
 #pragma once
 #include <string>
 #include <vector>

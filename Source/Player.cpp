@@ -1,5 +1,6 @@
+// davidkitinberg@gmail.com
+
 #include "../Headers/Player.hpp"
-#include "../Headers/Exception.hpp"
 #include "../Headers/Game.hpp"
 
 #include <stdexcept>

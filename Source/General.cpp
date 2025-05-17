@@ -1,3 +1,5 @@
+// davidkitinberg@gmail.com
+
 #include "../Headers/General.hpp"
 #include "../Headers/Player.hpp"
 #include "../Headers/Game.hpp"

@@ -1,4 +1,6 @@
-// Headers/PlayerFactory.hpp
+// davidkitinberg@gmail.com
+
+
 #pragma once
 #include <string>
 #include "Player.hpp"

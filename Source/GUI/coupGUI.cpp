@@ -1,3 +1,5 @@
+// davidkitinberg@gmail.com
+
 #include <SFML/Graphics.hpp>
 #include <iostream>
 #include <vector>
@@ -280,10 +282,13 @@ int main() {
                         pendingAction = "BlockBribe";
                         state = GUIState::SelectTarget;
                     } 
-                    else if (role == "Baron") 
+                    else if (role == "Baron") // Baron has the only special action that is not targetable
                     {
                         pendingAction = "Invest";
-                        state = GUIState::SelectTarget;
+                        game.handleTurnWithNoTarget(currentPlayer, pendingAction, log);
+                        game.checkElimination(log);
+                        currentPlayer = game.turn();
+                        state = GUIState::Game;
                     }
                 }
 
@@ -383,7 +388,8 @@ int main() {
                             if (action == "Arrest" || action == "Sanction" || action == "Coup" || action == "BlockBribe" || action == "BlockCoup" || action == "BlockTax") {
                                 pendingAction = action;
                                 state = GUIState::SelectTarget;
-                            } else 
+                            } 
+                            else 
                             {
                                 if (!isActionBlocked(action, currentPlayer, nullptr, font, log, game)) {
                                         game.handleTurnWithNoTarget(currentPlayer, action, log);
@@ -394,6 +400,7 @@ int main() {
                                     log.push_back("Action was blocked.");
                                 }
                                 currentPlayer = game.turn();
+                                game.handleMerchantPassive(currentPlayer, log);
                             }
                         }
                     }
@@ -428,13 +435,14 @@ int main() {
                                     log.push_back("Action was blocked.");
                                 }
                                 currentPlayer = game.turn();
+                                game.handleMerchantPassive(currentPlayer, log); // Each turn, the game check for passive Merchant ability
                                 state = GUIState::Game;
                             }
                             ++buttonIndex;
                         }
                     }
-                }
-            }
+                } // end of target selection click events
+            } // end of mouse click events block
         } // end of while main loop window.pollEvent(event)
 
         // --- Winner check ---
@@ -570,8 +578,6 @@ int main() {
                     specialActionBtn.setPosition(650, 100 + 6 * 50);
                     
                 } else if (role == "Spy") {
-                    // specialActionBtn.setString("Spy Coins");
-                    // specialActionBtn.setPosition(650, 100 + 6 * 50);
                     specialActionBtn.setString("Block Arrest");
                     specialActionBtn.setPosition(650, 100 + 6 * 50);
                     spyCoinBtn.setPosition(650, 100 + 7 * 50); // Set spy coin bottom under Block Arrest
@@ -592,7 +598,7 @@ int main() {
                     specialActionBtn.setPosition(650, 100 + 6 * 50);
                     
                 } else if (role == "Baron") {
-                    specialActionBtn.setString("Invest (3->6)");
+                    specialActionBtn.setString("Invest");
                     specialActionBtn.setPosition(650, 100 + 6 * 50);
                     
                 }
