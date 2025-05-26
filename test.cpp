@@ -36,6 +36,8 @@ void printLog(std::vector<std::string>& log) {
     log.clear();
 }
 
+
+
 TEST_CASE("Game restrictions on players") {
     Game game;
     std::vector<std::string> log;
@@ -102,20 +104,14 @@ TEST_CASE("Game restrictions on players") {
     
 
 
-//     // Try gather
-//     CHECK_NOTHROW(players[0]->gather());
-//     game.nextTurn();
-
-//     // Try tax
-//     CHECK_NOTHROW(players[1]->tax());
-//     game.nextTurn();
-
-//     // Check coins
-//     CHECK(players[0]->coins() == 1);
-//     CHECK(players[1]->coins() == 2);
 }
 
+
+
+
 ///////////////////////////// Test actions //////////////////////////////////
+
+
 TEST_CASE("Test Gather") {
     Game game;
     setUpGame(game);
@@ -132,6 +128,9 @@ TEST_CASE("Test Gather") {
 }
 
 
+
+
+
 TEST_CASE("Test Tax") {
     Game game;
     setUpGame(game);
@@ -139,6 +138,7 @@ TEST_CASE("Test Tax") {
 
     Player* current = game.turn();
     std::cout << "\n=========== Test Tax ===========\n";
+    std::cout << "\nTest Tax - normal case:\n";
     game.handleTurnWithNoTarget(current,"Tax", log); // Use tax
     printLog(log);
     if (current->role() == "Governor")
@@ -148,8 +148,42 @@ TEST_CASE("Test Tax") {
     else
         CHECK(current->coins() == 2);
     
+    ///////////////////////////////////////////////
+    std::cout << "\nTest Tax - Tax block case:\n";
+
+    current = game.turn(); // Current's player is Governor now
+    Player* target = game.getPlayers()[2]; // Target to block tax - General (Angel)
+
+    std::cout << "\nCurrent player `" << current->getName() << "` has " << current->coins() << " coins\n";
+    std::cout << "Target player `" << target->getName() << "` has " << target->coins() << " coins\n";
+
+    game.handleTurnWithTarget(current,"BlockTax", target, log); // Block tax action
+    printLog(log);
+
+    std::cout << "\nCurrent player `" << current->getName() << "` has " << current->coins() << " coins\n";
+    std::cout << "Target player `" << target->getName() << "` has " << target->coins() << " coins\n";
+
+    current = game.turn(); // Current's player is General now
+    game.handleTurnWithNoTarget(current,"Tax", log); // Try to use tax
+    printLog(log);
+
+    CHECK(current->coins() == 0); // Should not gain any coins
+    CHECK(current == game.turn()); // Failed action does not result in turn change
+
+    game.handleTurnWithNoTarget(current,"Gather", log); // Use gather
+    printLog(log);
+
+    std::cout << "\nCurrent player `" << current->getName() << "` has " << current->coins() << " coins\n";
+
+    CHECK(current->coins() == 1); // Only gain 1 coin after Gather
+    CHECK_FALSE(current == game.turn()); // Now turn should change
+
+
 
 }
+
+
+
 
 
 TEST_CASE("Test Sanction") {
@@ -313,6 +347,10 @@ TEST_CASE("Test Bribe") {
     std::cout << "\nCurrent player is `" << current->getName() << "`\n";
 
 }
+
+
+
+
 
 TEST_CASE("Test Arrest") {
     // Initialization
@@ -521,60 +559,89 @@ TEST_CASE("Test coup") {
 
 }
 
-TEST_CASE("Player blocking and special interactions") {
+////////////////////////// Test Special abilities (passive and active) that don't involve generic actions //////////////////////////
+
+
+TEST_CASE("Test Invest") {
+    // Initialization
     Game game;
-    Player* spy = createPlayerByRole("Spy", game, "Spy");
-    Player* governor = createPlayerByRole("Governor", game, "Gov");
-    game.getPlayers().push_back(spy);
-    game.getPlayers().push_back(governor);
+    setUpGame(game);
+    std::vector<std::string> log;
 
-    CHECK(game.getPlayers().size() == 2);
-    CHECK(game.turn() == spy);
 
-    CHECK_NOTHROW(spy->gather());
-    game.nextTurn();
+    std::cout << "\n=========== Test Invest ===========\n";
+    
 
-    // Governor blocks tax
-    CHECK_NOTHROW(governor->blockTax(*spy));
-    CHECK(spy->onTaxBlocked());
+    // Get pointers to current player
+    Player* current = game.turn();
 
-    // Should fail tax now
-    game.nextTurn(); // back to spy
-    CHECK_THROWS(spy->tax());
+    while(game.turn()->role() != "Baron")
+    {
+        game.handleTurnWithNoTarget(current,"Gather", log);
+        current = game.turn();
+    }
+
+    // We add artificially coins to Baron to use invest
+    CHECK(current->role() == "Baron");
+    current->addCoins(3);
+    std::cout << "\nCurrent player `" << current->getName() << "` has " << current->coins() << " coins\n";
+
+    game.handleTurnWithNoTarget(current,"Invest", log);
+    printLog(log);
+
+    std::cout << "\nCurrent player `" << current->getName() << "` has " << current->coins() << " coins\n";
+    CHECK(current != game.turn()); // After Invest the turn should change
+
+    
 }
 
-TEST_CASE("Sanction and arrest logic") {
+TEST_CASE("Merchant passive coin gain ability") {
+    // Initialization
     Game game;
-    Player* baron = createPlayerByRole("Baron", game, "Baron");
-    Player* judge = createPlayerByRole("Judge", game, "Judge");
-    game.getPlayers().push_back(baron);
-    game.getPlayers().push_back(judge);
+    setUpGame(game);
+    std::vector<std::string> log;
 
-    baron->addCoins(10);
-    judge->addCoins(10);
 
-    game.turn(); // set up turn order
-    CHECK_NOTHROW(baron->sanction(*judge));
-    CHECK(judge->onSanctioned());
+    std::cout << "\n=========== Test Merchant passive coin gain ability ===========\n";
 
-    game.nextTurn();
-    CHECK_THROWS(judge->tax());  // should fail due to sanction
+    // Get pointers to current player
+    Player* current = game.turn();
+
+    // Run up to his turn
+    while(game.turn()->role() != "Merchant")
+    {
+        game.handleTurnWithNoTarget(current,"Gather", log);
+        current = game.turn();
+    }
+    current->addCoins(3); // We add artificially coins to Merchant to see the passive works
+    game.handleMerchantPassive(current,log); // Use the function for it
+    printLog(log);
+    std::cout << "\nCurrent player `" << current->getName() << "` has " << current->coins() << " coins\n";
+
+    CHECK(current->role() == "Merchant");
+    CHECK(current->coins() == 4);
+
+    std::cout << "\nShow that the passive does not work on less than 3 coins:\n";
+
+    // Make him waste 4 coins and earn 2 so he would have only 2 coins now
+    game.handleTurnWithNoTarget(current,"Bribe", log);
+    game.handleTurnWithNoTarget(current,"Gather", log);
+    game.handleTurnWithNoTarget(current,"Gather", log);
+    printLog(log);
+    std::cout << "\nCurrent player `" << current->getName() << "` has " << current->coins() << " coins\n";
+    CHECK(current->coins() == 2);
+
+
+    // Run up to his turn again
+    while(game.turn()->role() != "Merchant")
+    {
+        game.handleTurnWithNoTarget(current,"Gather", log);
+        current = game.turn();
+    }
+    game.handleMerchantPassive(current,log); // Use the function for it
+    printLog(log);
+    std::cout << "\nCurrent player `" << current->getName() << "` has " << current->coins() << " coins\n";
+    CHECK(current->coins() == 2);
+
 }
 
-TEST_CASE("Coup and elimination") {
-    Game game;
-    Player* general = createPlayerByRole("General", game, "General");
-    Player* spy = createPlayerByRole("Spy", game, "Spy");
-    game.getPlayers().push_back(general);
-    game.getPlayers().push_back(spy);
-
-    general->addCoins(10);
-    game.turn(); // initialize
-
-    CHECK_NOTHROW(general->coup(*spy));
-    CHECK(spy->onCoupTrial());
-
-    game.nextTurn(); // Spy's turn should cause elimination
-    //game.checkElimination();
-    CHECK_FALSE(spy->isActive());
-}

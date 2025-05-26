@@ -12,6 +12,7 @@ namespace coup {
         return "General";
     }
 
+    // A function to prevent coup attempt
     void General::preventCoup(Player& target) {
         if (!isActive()) {
             throw std::runtime_error("Inactive player cannot play");

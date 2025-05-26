@@ -31,8 +31,10 @@ bool isActionBlocked(const std::string& action, Player* currentPlayer, Player* t
                      const sf::Font& font, std::vector<std::string>& log, Game& game) {
     std::vector<std::string> blockingRoles = getBlockingRoles(action);
 
-    for (const auto& role : blockingRoles) {
-        for (Player* p : game.getPlayers()) {
+    for (const auto& role : blockingRoles) 
+    {
+        for (Player* p : game.getPlayers()) 
+        {
             if (p == currentPlayer || p->role() != role || !p->isActive()) continue;
 
             std::ostringstream title;
@@ -60,16 +62,19 @@ bool isActionBlocked(const std::string& action, Player* currentPlayer, Player* t
                 while (blockWindow.pollEvent(e)) {
                     if (e.type == sf::Event::Closed) blockWindow.close();
 
-                    if (e.type == sf::Event::MouseButtonPressed) {
+                    if (e.type == sf::Event::MouseButtonPressed) // Handle mouse press event
+                    {
                         sf::Vector2f mouse(sf::Mouse::getPosition(blockWindow));
 
-                        if (passBtn.getGlobalBounds().contains(mouse)) {
+                        if (passBtn.getGlobalBounds().contains(mouse)) // User pressed "pass"
+                        {
                             blockWindow.close();
                             madeChoice = true;
                             break;
                         }
 
-                        if (blockBtn.getGlobalBounds().contains(mouse)) {
+                        if (blockBtn.getGlobalBounds().contains(mouse)) // User pressed "block"
+                        {
                             // Ask Game class to handle any block-related consequences
                             if (game.handleBlockConsequences(action, p, currentPlayer, log)) 
                             {
@@ -81,7 +86,8 @@ bool isActionBlocked(const std::string& action, Player* currentPlayer, Player* t
 
                                 blockWindow.close();
                                 return true;  // Valid block
-                            } else 
+                            } 
+                            else 
                             {
                                 log.push_back(p->getName() + " tried to block " + action + " but could not afford it.");
                                 blockWindow.close();
@@ -216,12 +222,14 @@ int main() {
 
     
 
+//////////////////////////////////////////////////////////////////////
 
-
-    // Main event loop
-    while (window.isOpen()) {
+    
+    while (window.isOpen()) // Main event loop
+    {
         sf::Event event;
-        while (window.pollEvent(event)) {
+        while (window.pollEvent(event)) 
+        {
             if (event.type == sf::Event::Closed) window.close();
 
             // Handle winner screen 
@@ -318,16 +326,19 @@ int main() {
                     log.push_back("Spy saw the coin report");
                 }
 
-                // Handle main menu bottoms (add player, start game)
-                if (state == GUIState::MainMenu) {
-                    // Add player button
-                    if (addPlayerBtn.getGlobalBounds().contains(mouse)) {
+                
+                if (state == GUIState::MainMenu) // Handle main menu bottoms (add player, start game)
+                {
+                    
+                    if (addPlayerBtn.getGlobalBounds().contains(mouse) && game.getPlayers().size() < 6) // Add player button
+                    {
                         state = GUIState::AddPlayer;
                         currentInput = "";
                         inputField.setString("");
                     }
                     // Start game button (only if at least 2 players)
-                    if (game.getPlayers().size() >= 2 && startGameBtn.getGlobalBounds().contains(mouse)) {
+                    if (game.getPlayers().size() >= 2 && startGameBtn.getGlobalBounds().contains(mouse)) 
+                    {
                         for (const auto& name : playerNames)
                             log.push_back("Added player: " + name);
                         log.push_back("Game started.");
@@ -463,20 +474,26 @@ int main() {
         // --- Rendering Section ---
         window.clear(sf::Color(235, 242, 250));
 
-        if (state == GUIState::MainMenu) {
+        if (state == GUIState::MainMenu) // Main manu rendering section
+        {
             window.draw(title);
 
-            // Draw Add Player Button with frame
-            sf::RectangleShape btnFrame(sf::Vector2f(addPlayerBtn.getGlobalBounds().width + 20, addPlayerBtn.getGlobalBounds().height + 18));
-            btnFrame.setPosition(addPlayerBtn.getPosition().x - 10, addPlayerBtn.getPosition().y - 5);
-            btnFrame.setOutlineColor(sf::Color::Blue);
-            btnFrame.setOutlineThickness(2);
-            btnFrame.setFillColor(sf::Color::Transparent);
-            window.draw(btnFrame);
-            window.draw(addPlayerBtn);
+            // Draw Add Player Button only if we dont exceed the legal amount
+            if(playerNames.size() < 6)
+            {
+                sf::RectangleShape btnFrame(sf::Vector2f(addPlayerBtn.getGlobalBounds().width + 20, addPlayerBtn.getGlobalBounds().height + 18));
+                btnFrame.setPosition(addPlayerBtn.getPosition().x - 10, addPlayerBtn.getPosition().y - 5);
+                btnFrame.setOutlineColor(sf::Color::Blue);
+                btnFrame.setOutlineThickness(2);
+                btnFrame.setFillColor(sf::Color::Transparent);
+                window.draw(btnFrame);
+                window.draw(addPlayerBtn);
+            }
+            
 
             // Draw Start Game Button only if enough players
-            if (playerNames.size() >= 2) {
+            if (playerNames.size() >= 2) 
+            {
                 sf::RectangleShape startFrame(sf::Vector2f(startGameBtn.getGlobalBounds().width + 20, startGameBtn.getGlobalBounds().height + 18));
                 startFrame.setPosition(startGameBtn.getPosition().x - 10, startGameBtn.getPosition().y - 5);
                 startFrame.setOutlineColor(sf::Color::Magenta);
@@ -487,7 +504,8 @@ int main() {
             }
         }
 
-        else if (state == GUIState::WinnerScreen) {
+        else if (state == GUIState::WinnerScreen) // Winner screen rendering section
+        {
             window.draw(winnerText);
 
             sf::RectangleShape newGameFrame(sf::Vector2f(newGameBtn.getGlobalBounds().width + 20, newGameBtn.getGlobalBounds().height + 20));
@@ -507,7 +525,8 @@ int main() {
             window.draw(exitBtn);
         }
 
-        else if (state == GUIState::AddPlayer) {
+        else if (state == GUIState::AddPlayer) // Adding player screen rendering section
+        {
             // Draw name input box
             window.draw(inputPrompt);
             sf::RectangleShape inputBox(sf::Vector2f(300, 40));
@@ -537,9 +556,10 @@ int main() {
             window.draw(cancelBtn);
         }
 
-        else if (state == GUIState::Game || state == GUIState::SelectTarget) {
-            // Draw current player stats and list of others
-            if (currentPlayer) {
+        else if (state == GUIState::Game || state == GUIState::SelectTarget) // Draw current player stats and list of others
+        {
+            if (currentPlayer) // Draw current's player stats
+            {
                 std::ostringstream stats;
                 stats << "Current Turn:\n" << "Name: " << currentPlayer->getName()
                       << "\nRole: " << currentPlayer->role()
@@ -554,8 +574,9 @@ int main() {
                 window.draw(statsText);
             }
 
-            // Draw action buttons if in Game state
-            if (state == GUIState::Game) {
+            
+            if (state == GUIState::Game) // Draw action buttons if in Game state
+            {
                 for (auto& btn : actionButtons) {
                     sf::RectangleShape box(sf::Vector2f(btn.getGlobalBounds().width + 20, btn.getGlobalBounds().height + 18));
                     box.setPosition(btn.getPosition().x - 10, btn.getPosition().y - 5);
@@ -568,16 +589,19 @@ int main() {
             }
 
             // Draw special action bottom for each role
-            if (state == GUIState::Game && currentPlayer != nullptr) {
+            if (state == GUIState::Game && currentPlayer != nullptr) 
+            {
                 std::string role = currentPlayer->role();
 
                 specialActionBtn.setString(""); // reset the action bottom each time for the sake of roles with no special actions
 
-                if (role == "Governor") {
+                if (role == "Governor") 
+                {
                     specialActionBtn.setString("Block Tax");
                     specialActionBtn.setPosition(650, 100 + 6 * 50);
-                    
-                } else if (role == "Spy") {
+                } 
+                else if (role == "Spy") 
+                {
                     specialActionBtn.setString("Block Arrest");
                     specialActionBtn.setPosition(650, 100 + 6 * 50);
                     spyCoinBtn.setPosition(650, 100 + 7 * 50); // Set spy coin bottom under Block Arrest
@@ -589,20 +613,26 @@ int main() {
                     window.draw(spyFrame);
                     window.draw(spyCoinBtn);
                     
-                } else if (role == "General") {
+                } 
+                else if (role == "General") 
+                {
                     specialActionBtn.setString("Block Coup");
                     specialActionBtn.setPosition(650, 100 + 6 * 50);
                     
-                } else if (role == "Judge") {
+                } 
+                else if (role == "Judge") 
+                {
                     specialActionBtn.setString("Block Bribe");
                     specialActionBtn.setPosition(650, 100 + 6 * 50);
                     
-                } else if (role == "Baron") {
+                } 
+                else if (role == "Baron") 
+                {
                     specialActionBtn.setString("Invest");
-                    specialActionBtn.setPosition(650, 100 + 6 * 50);
-                    
+                    specialActionBtn.setPosition(650, 100 + 6 * 50);  
                 }
-                if (!specialActionBtn.getString().isEmpty()) {
+                if (!specialActionBtn.getString().isEmpty()) 
+                {
                     sf::RectangleShape specialBox(sf::Vector2f(specialActionBtn.getGlobalBounds().width + 20, specialActionBtn.getGlobalBounds().height + 18));
                     specialBox.setPosition(specialActionBtn.getPosition().x - 10, specialActionBtn.getPosition().y - 5);
                     specialBox.setOutlineColor(sf::Color::Red);
@@ -611,11 +641,11 @@ int main() {
                     window.draw(specialBox);
                     window.draw(specialActionBtn);
                 }
-                
             }
 
             // Draw target selection modal --> Players selection to target
-            else if (state == GUIState::SelectTarget) {
+            else if (state == GUIState::SelectTarget) 
+            {
                 // Modal background
                 sf::RectangleShape modal(sf::Vector2f(400, 300));
                 modal.setPosition(250, 150);
@@ -641,9 +671,11 @@ int main() {
                 // Player buttons inside modal
                 const auto& players = game.getPlayers();
                 int buttonIndex = 0;
-                for (size_t i = 0; i < players.size(); ++i) {
+                for (size_t i = 0; i < players.size(); ++i) 
+                {
                 
-                    if (players[i] != currentPlayer) {
+                    if (players[i] != currentPlayer) 
+                    {
                         sf::Text btn(players[i]->getName(), font, 20);
                         float bx = 270.f;
                         float by = 200.f + buttonIndex * 50.f;
@@ -664,30 +696,33 @@ int main() {
                 }
             }
 
-            // --- Log box, title, and scroll bar ---
-            sf::Text logTitle("Log events:", font, 20);
+            // Draw Log box, title, and scroll bar:
+
+            sf::Text logTitle("Log events:", font, 20); // Log events title
             logTitle.setFillColor(sf::Color(59, 76, 202));
             logTitle.setPosition(50, 470);
             window.draw(logTitle);
 
-            sf::RectangleShape logBg(sf::Vector2f(800, 150));
+            sf::RectangleShape logBg(sf::Vector2f(800, 150)); // Log box
             logBg.setFillColor(sf::Color(245, 248, 255));
             logBg.setOutlineColor(sf::Color::Black);
             logBg.setOutlineThickness(1);
             logBg.setPosition(50, 500);
             window.draw(logBg);
 
+            // Handle scrolling logic
             float yStart = 515 - logScrollOffset;
             float lineHeight = 20;
             float boxTop = 510;
             float boxBottom = 500 + 150;
 
-            for (std::size_t i = 0; i < log.size(); ++i) {
+            for (std::size_t i = 0; i < log.size(); ++i) 
+            {
                 float y = yStart + i * lineHeight;
                 float lineBottom = y + lineHeight;
 
-                if (lineBottom < boxTop) continue;        // Skip lines above box
-                if (y > boxBottom - 1) break;              // Stop if line starts below box
+                if (lineBottom < boxTop) continue; // Skip lines above box
+                if (y > boxBottom - 1) break; // Stop if line starts below box
 
                 sf::Text line(log[i], font, 16);
                 line.setFillColor(sf::Color::Black);
@@ -695,6 +730,7 @@ int main() {
                 window.draw(line);
             }
 
+            // Handle scroll bar logic
             float scrollBarX = 50 + 800 - 10;
             float scrollBarY = 500;
             float scrollBarHeight = 150;
