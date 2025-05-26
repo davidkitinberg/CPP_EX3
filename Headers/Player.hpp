@@ -55,9 +55,7 @@ public:
     virtual void bribe();
     virtual void arrest(Player& target);
     virtual void sanction(Player& target);
-    //void resetSanction();
     virtual bool onSanctioned() const;
-    //virtual bool onArrested() const;
     virtual void coup(Player& target);
 
     void resetTurnFlags();
@@ -68,4 +66,4 @@ public:
     void deactivate();
 };
 
-} // namespace coup
+}

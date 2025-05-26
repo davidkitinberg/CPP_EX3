@@ -11,50 +11,37 @@ LOGIC_SRC = Source/Game.cpp Source/Player.cpp Source/PlayerFactory.cpp \
 # GUI source includes main()
 GUI_SRC = $(LOGIC_SRC) Source/GUI/coupGUI.cpp
 
-# Default target
-all: coupGUI
+# Target: Windows 11 WSLg environment
+win11: coupGUI
+	@echo "[INFO] WSLg (Windows 11) detected. Running GUI natively."
+	./coupGUI
 
-# Run the app — detect WSL vs WSLg vs Linux
-run: coupGUI
-	@ \
-	OS_NAME=$$(uname -s); \
-	WSL_VERSION=$$(grep -i microsoft /proc/version 2>/dev/null || true); \
-	if [ "$$OS_NAME" = "Linux" ] && [ -n "$$WSL_VERSION" ]; then \
-		# Inside WSL — now detect if WSLg or VcXsrv needed \
-		if grep -q "WSLg" /proc/version 2>/dev/null; then \
-			echo "[INFO] WSLg detected (Windows 11). Running GUI natively."; \
-			./coupGUI; \
-		else \
-			echo "[INFO] WSL (Windows 10) detected. Using VcXsrv fallback..."; \
-			export DISPLAY=$$(grep nameserver /etc/resolv.conf | awk '{print $$2}'):0; \
-			export LIBGL_ALWAYS_INDIRECT=1; \
-			./coupGUI; \
-		fi \
-	elif [ "$$OS_NAME" = "Linux" ]; then \
-		echo "[INFO] Native Linux detected. Running normally."; \
-		./coupGUI; \
-	else \
-		echo "[ERROR] Unknown or unsupported environment."; \
-		exit 1; \
-	fi
+# Target: Windows 10 WSL environment (VcXsrv fallback)
+win10: coupGUI
+	@echo "[INFO] WSL (Windows 10) detected. Using VcXsrv fallback..."
+	@export DISPLAY=$$(grep nameserver /etc/resolv.conf | awk '{print $$2}'):0; \
+	export LIBGL_ALWAYS_INDIRECT=1; \
+	./coupGUI
 
 # Build GUI version
 coupGUI:
 	$(CXX) $(GUI_SRC) $(CXXFLAGS) $(LDFLAGS) -o coupGUI
 
-# Command-line version for logic testing
+# Target: compile and run main logic-only CLI program
 main: main.cpp $(LOGIC_SRC)
-	$(CXX) main.cpp $(LOGIC_SRC) $(CXXFLAGS) $(LDFLAGS) -g -o demo
+	$(CXX) main.cpp $(LOGIC_SRC) $(CXXFLAGS) $(LDFLAGS) -o demo
+	./demo
 
-# Unit testing binary
+# Target: compile and run unit tests
 test: test.cpp $(LOGIC_SRC)
 	$(CXX) test.cpp $(LOGIC_SRC) $(CXXFLAGS) $(LDFLAGS) -o test
+	./test
 
-# Valgrind memory check (Linux/WSL only)
+# Optional: Valgrind memory check on CLI program
 valgrind:
 	$(CXX) main.cpp $(LOGIC_SRC) $(CXXFLAGS) $(LDFLAGS) -o demo
 	valgrind --leak-check=full ./demo
 
-# Cleanup
+# Target: cleanup build artifacts
 clean:
 	rm -f coupGUI demo test

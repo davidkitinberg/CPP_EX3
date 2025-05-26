@@ -11,7 +11,6 @@ public:
     void tax() override; // Gets 3 coins instead of 2
     std::string role() const override; // Return player's role
     
-    void blockTaxAction(Player& other); // Can block another player's tax action
 };
 
 }

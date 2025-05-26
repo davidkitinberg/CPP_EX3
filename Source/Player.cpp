@@ -136,7 +136,7 @@ void Player::sanction(Player& target) {
         deductCoins(3);
         target.state.isSanctioned = true;
         if(target.role() == "Baron") target.addCoins(1); // Special Baron compensation
-        if(target.role() == "Judge") deductCoins(1);; // Special Baron compensation
+        if(target.role() == "Judge") deductCoins(1);; // Sanctioning Judge costs 4 coins instead of 3
     }
 }
 
@@ -145,14 +145,10 @@ bool Player::onSanctioned() const {
     return state.isSanctioned;
 }
 
-// Helper function to see arrested state
-// bool Player::onArrested() const {
-//     return state.isArrestedBlocked;
-// }
-
 
 void Player::coup(Player& target) {
     validateAction("Coup");
+    if (target.onCoupTrial()) throw std::runtime_error(target.getName() + " is already on coup trial, Please choose someone else");
     if (&target == this) throw std::runtime_error("Cannot perform coup on yourself");
     if (coin_count < 7) throw std::runtime_error("Not enough coins to coup (require 7 coins)");
     deductCoins(7);
@@ -177,6 +173,7 @@ void Player::validateAction(const std::string& actionName) const {
     if (state.isArrestedBlocked && actionName == "Arrest") {
         throw std::runtime_error(name + " is currently blocked from using arrest (Spy ability).");
     }
+    if (coin_count >= 10 && actionName != "Coup") throw std::runtime_error(name + " has " + std::to_string(coin_count) + " coins (if you have at least 10 coins you must coup)");
 }
 
 // Governor only method that blocks the tax action on another player
@@ -198,7 +195,7 @@ void Player::blockCoup(Player& target) {
 }
 
 void Player::blockBribe(Player& target) {
-    if(this->role() != "Judge") throw std::runtime_error("Coup block action only permitted to Judge");
+    if(this->role() != "Judge") throw std::runtime_error("Bribe block action only permitted to Judge");
     
     if (game.turn() == this) {
         // Judge is using block during their own turn: apply future bribe block
@@ -237,17 +234,6 @@ void Player::usedBribeTurn() {
     state.bribedThisTurn = false;
 }
 
-// void Player::resetArrestBlock() {
-//     state.isArrestedBlocked = false;
-// }
-
-// void Player::resetBribeBlock() {
-//     state.isBribeBlocked = false;
-// }
-
-// void Player::resetSanction() {
-//     state.isSanctioned = false;
-// }
 
 void Player::resetTurnFlags() {
     state.bribedThisTurn = false;

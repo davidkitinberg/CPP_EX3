@@ -8,7 +8,7 @@ namespace coup {
 class Judge : public Player {
 public:
     Judge(Game& game, const std::string& name);
-    void undoBribe(Player& other);
+    
     std::string role() const override; // Return player's role
 };
 

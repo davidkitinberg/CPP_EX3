@@ -35,10 +35,19 @@ void Game::addPlayerWithRandomRole(const std::string& name) {
     std::string role = roles[dis(gen)];
 
 
-    //std::string role = roles[rand() % roles.size()];
     Player* player = createPlayerByRole(role, *this, name); // Factory function
     player_list.push_back(player); // Add player to the game
 }
+
+// Function that adds player with desired role (only used for testing)
+void Game::addPlayerWithRole(const std::string& name, const std::string& role) {
+    if (player_list.size() >= 6) {
+        throw std::runtime_error("Maximum 6 players allowed");
+    }
+    Player* player = createPlayerByRole(role, *this, name);
+    player_list.push_back(player);
+}
+
 
 // Function that gives the Players of the game
 std::vector<Player*> Game::getPlayers() const {

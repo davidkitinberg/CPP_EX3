@@ -36,6 +36,10 @@ public:
     //void paidBribe();
 
     void nextTurn(); // Called manually after a player's action
+
+    
+    void addPlayerWithRole(const std::string& name, const std::string& role);
+    
 };
 
 }
