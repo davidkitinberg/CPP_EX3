@@ -40,17 +40,18 @@ void Player::deductCoins(int amount) {
     coin_count -= amount;
 }
 
-// The player was tagged for a coup, only the general can undo this. On his next turn he will be terminated
+// Place a player on coup trial (on his next turn he will be terminated), Only a General can undo it
 void Player::deactivate() {
     state.onCoupTrial = true;
 }
 
+// Function that eliminates a player that reached his turn in a on coup trial state
 void Player::eliminate() {
     state.active = false;
     state.onCoupTrial = false;
 }
 
-// Gives one coin to the player
+// Function for the action "Gather" that gives the player 1 coin
 void Player::gather() {
     validateAction("Gather");
  
@@ -58,7 +59,7 @@ void Player::gather() {
     // advance turn should happen in game
 }
 
-// Gives 2 coins to the player
+// Function for the action "Tax" that gives the player 2 coins 
 void Player::tax() {
     validateAction("Tax");
     if(onSanctioned()) {
@@ -73,6 +74,7 @@ void Player::tax() {
     
 }
 
+// Function for the action "Bribe" that gives the player another turn
 void Player::bribe() {
     validateAction("Bribe");
 
@@ -81,7 +83,7 @@ void Player::bribe() {
         throw std::runtime_error(name + " is bribe-blocked and cannot use bribe this turn.");
     }
 
-    if (coin_count < 4)
+    if (coin_count < 4) // Check if the player has enough coins for bribe
         throw std::runtime_error(name + " cannot perform bribe (not enough coins - require 4 coins)");
     else {
         deductCoins(4);
@@ -90,13 +92,14 @@ void Player::bribe() {
     }
 }
 
+// Function for the action "Arrest" that steals one coin from a target player and gives the caller 1 coin
 void Player::arrest(Player& target) {
     validateAction("Arrest");
 
-    if (&target == this)
+    if (&target == this) // Check self targeting
         throw std::runtime_error("Cannot perform arrest on yourself");
 
-    if (target.state.isRecentlyArrested)
+    if (target.state.isRecentlyArrested) // Cant arrest twice on a row
         throw std::runtime_error(target.getName() + " was recently arrested and cannot be arrested again yet.");
 
 
@@ -123,6 +126,7 @@ void Player::arrest(Player& target) {
     target.state.isRecentlyArrested = true;
 }
 
+// Function for the action "Sanction" that blocks the targeted player from using Tax & Gather (costs 3 coins to the caller)
 void Player::sanction(Player& target) {
     validateAction("Sanction");
     if (&target == this)
@@ -140,12 +144,14 @@ void Player::sanction(Player& target) {
     }
 }
 
-// Helper function to see sunction state
+
+// Helper function to see sanction state
 bool Player::onSanctioned() const {
     return state.isSanctioned;
 }
 
 
+// Function for the action "Coup" that places the targeted player on "coup trial" (costs 7 coins to the caller)
 void Player::coup(Player& target) {
     validateAction("Coup");
     if (target.onCoupTrial()) throw std::runtime_error(target.getName() + " is already on coup trial, Please choose someone else");
@@ -188,12 +194,14 @@ void Player::blockArrest(Player& target) {
     target.state.isArrestedBlocked = true;
 }
 
+// General only method that blocks the coup action on another player, or prevents elimination on another player
 void Player::blockCoup(Player& target) {
     if(this->role() != "General") throw std::runtime_error("Coup block action only permitted to General");
     target.state.onCoupTrial = false;
 
 }
 
+// Judge only method that blocks the bribe action on another player
 void Player::blockBribe(Player& target) {
     if(this->role() != "Judge") throw std::runtime_error("Bribe block action only permitted to Judge");
     
@@ -227,6 +235,7 @@ bool Player::onBribe() const {
     return state.bribedThisTurn; 
 }
 
+// Function that resets "bribedThisTurn" flag in player state - called after the player used his bribe turn
 void Player::usedBribeTurn() {
     if(!onBribe())
         throw std::runtime_error(this->getName() + " Did not use bribe this turn");
@@ -235,6 +244,7 @@ void Player::usedBribeTurn() {
 }
 
 
+// Resets state flags of actions that are blocking action for one turn
 void Player::resetTurnFlags() {
     state.bribedThisTurn = false;
     state.isSanctioned = false;

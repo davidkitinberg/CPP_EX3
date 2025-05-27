@@ -144,10 +144,10 @@ int main() {
     // GUI state management
     GUIState state = GUIState::MainMenu;
     std::string currentInput;
-    std::string pendingAction;  // For actions that require a target
+    std::string pendingAction; // For actions that require a target
     std::vector<std::string> playerNames;
-    std::vector<std::string> log;  // Game log
-    float logScrollOffset = 0;     // For scrollable log
+    std::vector<std::string> log; // Game log
+    float logScrollOffset = 0; // For scrollable log
 
     // Text UI Elements
 
@@ -307,7 +307,7 @@ int main() {
                         coinInfo << p->getName() << ": " << p->coins() << " coins\n";
                     }
 
-                    sf::RenderWindow reportWindow(sf::VideoMode(400, 300), "Spy Report");
+                    sf::RenderWindow reportWindow(sf::VideoMode(400, 300), "Spy Report"); // Render coin report
                     sf::Text reportText(coinInfo.str(), font, 20);
                     reportText.setFillColor(sf::Color::Black);
                     reportText.setPosition(20, 20);
@@ -398,9 +398,9 @@ int main() {
                             // If action requires target, change state
                             if (action == "Arrest" || action == "Sanction" || action == "Coup" || action == "BlockBribe" || action == "BlockCoup" || action == "BlockTax") {
                                 pendingAction = action;
-                                state = GUIState::SelectTarget;
+                                state = GUIState::SelectTarget; // Go to select target state
                             } 
-                            else 
+                            else // If its a non targetable action
                             {
                                 if (!isActionBlocked(action, currentPlayer, nullptr, font, log, game)) {
                                         game.handleTurnWithNoTarget(currentPlayer, action, log);

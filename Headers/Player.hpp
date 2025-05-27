@@ -24,46 +24,52 @@ class Player {
 
     
 protected:
-    Game& game;
-    std::string name;
-    int coin_count = 0;
-    PlayerState state;
-    void validateAction(const std::string& actionName = "") const;
+    Game& game; // Game instance
+    std::string name; // Player's name
+    int coin_count = 0; // Player's coins
+    PlayerState state; // Struct for player's state (sanction,tax blocked, etc..)
+    void validateAction(const std::string& actionName = "") const; // Helper method to validate action and save duplicated code
 
 public:
-    Player(Game& game, const std::string& name);
-    virtual ~Player() = default;
+    Player(Game& game, const std::string& name); // Constructor
+    virtual ~Player() = default; // Default destructor
 
-    void blockTax(Player& target);  // prevents only tax
-    void blockArrest(Player& target); // prevents arrest
-    void blockCoup(Player& target); // Prevents coup
-    void blockBribe(Player& target); // Prevents bribe
-    bool onTaxBlocked() const;
-    bool onArrestedBlocked() const;
-    //void resetArrestBlock();
-    bool onCoupTrial() const;
-    void eliminate();
-    bool onBribe() const;
-    //void resetBribeBlock();
-    void usedBribeTurn();
-    std::string getName() const;
-    int coins() const;
-    bool isActive() const;
-    virtual std::string role() const = 0;
-    virtual void gather();
-    virtual void tax();
-    virtual void bribe();
-    virtual void arrest(Player& target);
-    virtual void sanction(Player& target);
-    virtual bool onSanctioned() const;
-    virtual void coup(Player& target);
+    // Special actions that are role based
+    void blockTax(Player& target);  // Governor only method that blocks the tax action on another player
+    void blockArrest(Player& target); // Spy only method that blocks the arrest action on another player
+    void blockCoup(Player& target); // General only method that blocks the coup action on another player, or prevents elimination on another player
+    void blockBribe(Player& target); // Judge only method that blocks the bribe action on another player
 
-    void resetTurnFlags();
+    // Helper functions for managing actions logic
+    bool onTaxBlocked() const; // Helper function to governor that checks if player is blocked on tax
+    bool onArrestedBlocked() const; // Helper function to spy that checks if player is blocked on arrest
+    bool onCoupTrial() const; // Helper function to general that checks if player is on coop trial
+    bool onBribe() const; // Helper function to judge that checks if player has taken a bribe (for 2 actions on a turn)
+    void usedBribeTurn(); // Function that resets "bribedThisTurn" flag in player state - called after the player used his bribe turn
+    virtual bool onSanctioned() const; // Helper function to see sanction state
+
+    void eliminate(); // Function that eliminates a player that reached his turn in a on coup trial state
+    
+    // Getters
+    std::string getName() const; // Getter for player's name
+    int coins() const; // Getter for number of coins the player has
+    bool isActive() const; // Returns the state of player
+    virtual std::string role() const = 0; // Pure virtual function that returns from each player it's role
+
+    // Actions
+    virtual void gather(); // Function for the action "Gather" that gives the player 1 coin
+    virtual void tax(); // Function for the action "Tax" that gives the player 2 coins 
+    virtual void bribe(); // Function for the action "Bribe" that gives the player another turn
+    virtual void arrest(Player& target); // Function for the action "Arrest" that steals one coin from a target player and gives the caller 1 coin
+    virtual void sanction(Player& target); // Function for the action "Sanction" that blocks the targeted player from using Tax & Gather (costs 3 coins to the caller)
+    virtual void coup(Player& target); // Function for the action "Coup" that places the targeted player on "coup trial" (costs 7 coins to the caller)
+
+    void resetTurnFlags(); // Resets state flags of actions that are blocking action for one turn
     
 
-    void addCoins(int amount);
-    void deductCoins(int amount);
-    void deactivate();
+    void addCoins(int amount); // Adds coins to the player
+    void deductCoins(int amount); // Deducts coins from the player
+    void deactivate(); // Place a player on coup trial (on his next turn he will be terminated), Only a General can undo it
 };
 
 }

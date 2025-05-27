@@ -9,11 +9,11 @@ namespace coup {
 
     Baron::Baron(Game& g, const std::string& name) : Player(g, name) {}
     
+    // Special function only for Baron role players. Takes away 3 coins and returns 6 coins (counts as a turn)
     void Baron::invest() {
         if (coins() < 3) throw std::runtime_error("Need 3 coins to invest");
         deductCoins(3);
         addCoins(6);
-        // When I will add another logic of the real time turns, I will add that on the next turn it will be like that
     }
     
     std::string Baron::role() const {

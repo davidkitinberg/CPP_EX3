@@ -4,6 +4,13 @@
 #include "../Headers/PlayerFactory.hpp"
 #include <iostream>
 
+
+/* Disclaimer: Due to the nature of this project, testing actions and game flow without the GUI is not intuitive.
+** The program was designed for real-time user interaction. Therefore, the tests simulate in-game scenarios to reflect
+** realistic gameplay. Some aspects of the game logic may be abstracted or simplified as a result, but the tests remain
+** faithful to the intended game behavior.
+*/
+
 using namespace coup;
 
 // Adds new players to the game
@@ -643,5 +650,28 @@ TEST_CASE("Merchant passive coin gain ability") {
     std::cout << "\nCurrent player `" << current->getName() << "` has " << current->coins() << " coins\n";
     CHECK(current->coins() == 2);
 
+}
+
+TEST_CASE("Test Winner") {
+    // Initialization
+    Game game;
+    std::vector<std::string> log;
+
+    game.addPlayerWithRole("Dexter", "Spy");
+    game.addPlayerWithRole("Debra", "Governor");
+
+    Player* current = game.turn(); // Dexter
+    Player* target = game.getPlayers()[1]; // Debra
+
+    current->addCoins(7); // Add coins artificially to make coup
+
+    CHECK(game.winner() == nullptr); // Should be still 2 players in the game - no winner
+
+    game.handleTurnWithTarget(current, "Coup", target, log); // Coup Debra
+    game.checkElimination(log); // Check eliminiation status
+    printLog(log);
+
+    CHECK(game.winner() == current); // Dexter is the only one left in the game
+    
 }
 

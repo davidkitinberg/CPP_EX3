@@ -22,7 +22,7 @@ Game::~Game() {
 
 // Function to add player with random Role
 void Game::addPlayerWithRandomRole(const std::string& name) {
-    if (player_list.size() >= 6) {
+    if (player_list.size() >= 6) { // Limit number of players to 6
         throw std::runtime_error("Maximum 6 players allowed");
     }
     static std::vector<std::string> roles = {"Baron", "Spy", "Governor", "Merchant", "Judge", "General"};
@@ -32,7 +32,7 @@ void Game::addPlayerWithRandomRole(const std::string& name) {
     static std::mt19937 gen(rd()); // seed once the random object
     std::uniform_int_distribution<> dis(0, roles.size() - 1);
 
-    std::string role = roles[dis(gen)];
+    std::string role = roles[dis(gen)]; // Assign random role
 
 
     Player* player = createPlayerByRole(role, *this, name); // Factory function
@@ -41,19 +41,21 @@ void Game::addPlayerWithRandomRole(const std::string& name) {
 
 // Function that adds player with desired role (only used for testing)
 void Game::addPlayerWithRole(const std::string& name, const std::string& role) {
-    if (player_list.size() >= 6) {
+    if (player_list.size() >= 6) { // Limit number of players to 6
         throw std::runtime_error("Maximum 6 players allowed");
     }
-    Player* player = createPlayerByRole(role, *this, name);
-    player_list.push_back(player);
+    Player* player = createPlayerByRole(role, *this, name); // Factory function
+    player_list.push_back(player); // Add player to the game
 }
 
 
 // Function that gives the Players of the game
 std::vector<Player*> Game::getPlayers() const {
     std::vector<Player*> result;
-    for (Player* p : player_list) {
-        if (p->isActive()) {
+    for (Player* p : player_list) 
+    {
+        if (p->isActive()) 
+        {
             result.push_back(p);
         }
     }
@@ -62,15 +64,16 @@ std::vector<Player*> Game::getPlayers() const {
 
 // Function that returns the current player that has the turn now
 Player* Game::turn() {
-    if (player_list.empty()) {
+    if (player_list.empty()) { // Check for empty vector (should not even exist in our game logic)
         throw std::runtime_error("No players in the game");
     }
 
-    Player* p = player_list[current_turn];
+    Player* p = player_list[current_turn]; // Update current player pointer
 
-    // Handle coup trial resolution: eliminate if not blocked
-    if (p->onCoupTrial()) {
-        p->eliminate();  // new function below
+    // Handle coup trial: eliminate if not blocked
+    if (p->onCoupTrial()) 
+    {
+        p->eliminate();  // Kick player from the game
         nextTurn();      // skip to next valid player
         return turn();   // recursively return the next valid player
     }
@@ -78,7 +81,7 @@ Player* Game::turn() {
     return p;
 }
 
-// Fucntion that return vector list of the current players names
+// Fucntion that return vector list of the current players names (in string)
 std::vector<std::string> Game::players() const {
     std::vector<std::string> result;
     for (Player* p : player_list) {
@@ -101,7 +104,7 @@ Player* Game::winner() const {
         }
     }
 
-    if (count == 1) {
+    if (count == 1) { // Only if one player left in active state we will declare winner
         return last_active;
     }
 
@@ -110,22 +113,22 @@ Player* Game::winner() const {
 
 // Function to handle turn game with action that requires a target
 void Game::handleTurnWithTarget(Player* player, const std::string& action, Player* target, std::vector<std::string>& log) {
-    if (!player || !target) {
+    if (!player || !target) { // Check null
         log.push_back("Invalid turn: Player or target is null.");
         return;
     }
 
-    if (!player->isActive()) {
+    if (!player->isActive()) { // Check active player
         log.push_back(player->getName() + " is out of the game.");
         return;
     }
 
-    if (!target->isActive()) {
+    if (!target->isActive()) { // Check active player (target)
         log.push_back("Invalid target: " + target->getName() + " is already eliminated.");
         return;
     }
 
-    if(player->coins() >= 10)
+    if(player->coins() >= 10) // force Coup if there is more than 10 coins
     {
         try {
             player->coup(*target);
@@ -226,6 +229,11 @@ void Game::handleTurnWithTarget(Player* player, const std::string& action, Playe
 
 // Function to handle turn game with action does not require a target
 void Game::handleTurnWithNoTarget(Player* player, const std::string& action, std::vector<std::string>& log) {
+
+    if (!player->isActive()) { // Check active player
+        log.push_back(player->getName() + " is out of the game.");
+        return;
+    }
     
     if (action == "Tax") {
             try {

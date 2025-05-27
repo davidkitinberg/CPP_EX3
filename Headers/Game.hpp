@@ -21,24 +21,28 @@ private:
 public:
     Game();
     ~Game();
-    std::vector<Player*> getPlayers() const;
-    //void addPlayer(Player* player);
-    // Player* turn() const;
-    Player* turn();
-    void handleTurnWithTarget(Player* player, const std::string& action, Player* target, std::vector<std::string>& log);
-    void handleTurnWithNoTarget(Player* player, const std::string& action, std::vector<std::string>& log);
-    bool handleBlockConsequences(const std::string& action, Player* blocker, Player* initiator, std::vector<std::string>& log);
-    void handleMerchantPassive(Player* player, std::vector<std::string>& log);
-    std::vector<std::string> players() const;
-    Player* winner() const;
-    void addPlayerWithRandomRole(const std::string& name);
-    void checkElimination(std::vector<std::string>& log);
-    //void paidBribe();
+    std::vector<Player*> getPlayers() const; // Returns vector of the current players in the game (in Player objects)
+    Player* turn(); // Returns the player whose turn it is
 
-    void nextTurn(); // Called manually after a player's action
+    // Two general functions that know how to handle a turn with each action
+    void handleTurnWithTarget(Player* player, const std::string& action, Player* target, std::vector<std::string>& log); 
+    void handleTurnWithNoTarget(Player* player, const std::string& action, std::vector<std::string>& log);
+
+    // Special function that handles block consequences logic when its not the blocker's turn
+    bool handleBlockConsequences(const std::string& action, Player* blocker, Player* initiator, std::vector<std::string>& log);
+
+    // Small simple function to handle Merchant passive ability
+    void handleMerchantPassive(Player* player, std::vector<std::string>& log);
+
+    std::vector<std::string> players() const; // Returns vector of the current players in the game (in string)
+    Player* winner() const; // Function that declares winner
+    void addPlayerWithRandomRole(const std::string& name); // Function to add player with random Role
+    void checkElimination(std::vector<std::string>& log); // Function that checks elimination before each player's turn and eliminates if there is a need to
+
+    void nextTurn(); // Called manually after a player's action - changes turns
 
     
-    void addPlayerWithRole(const std::string& name, const std::string& role);
+    void addPlayerWithRole(const std::string& name, const std::string& role); // Function that adds player with desired role (only used for testing)
     
 };
 
